@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lengua y faringe UDCA</title>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#120a1f;--surf:#1d1233;--ink:#efe8fb;--mut:#aa9cc6;--line:#3b2a5e;--cv:#190f2c;--sel:#b794f6;--selt:#120a1f;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Source Sans 3",system-ui,sans-serif}
+header{padding:18px 20px 6px;max-width:1280px;margin:auto}
+h1{font:700 clamp(24px,4vw,36px)/1.15 Spectral,Georgia,serif;margin:0 0 4px}
+header p{margin:0;color:var(--mut);max-width:70ch}
+.wrap{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;max-width:1280px;margin:auto;padding:12px 20px 24px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surf);color:var(--ink);padding:7px 13px;border-radius:999px;font:600 14px "Source Sans 3",sans-serif;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--sel);color:var(--selt);border-color:var(--sel)}
+.tabs button:focus-visible,.ctl button:focus-visible,summary:focus-visible{outline:2px solid #c4a1ff;outline-offset:2px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+#cv{position:relative;background:var(--cv);border:1px solid var(--line);border-radius:10px;height:min(74vh,700px);min-height:380px;overflow:hidden;touch-action:none}
+#cv canvas{display:block;width:100%;height:100%;cursor:grab}
+#tip{position:absolute;pointer-events:none;background:var(--sel);color:var(--selt);font-size:13px;padding:3px 8px;border-radius:6px;display:none;white-space:nowrap}
+.ctl{position:absolute;left:10px;bottom:10px;right:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mut)}
+.ctl label{display:flex;gap:6px;align-items:center;background:var(--surf);padding:4px 10px;border-radius:6px;border:1px solid var(--line);color:var(--ink)}
+.ctl button{background:var(--surf);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 10px;font:inherit;cursor:pointer}
+#panel{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:16px 18px;max-height:min(74vh,700px);overflow:auto;align-self:start}
+#panel h2{font:700 24px/1.2 Spectral,Georgia,serif;margin:0 0 6px}
+#panel p{margin:.2em 0 .8em}
+.pick{display:inline-block;background:var(--cv);border-radius:6px;padding:2px 9px;font-size:14px;margin-bottom:8px}
+details{border-top:1px solid var(--line);padding:6px 0}
+summary{cursor:pointer;font-weight:600;padding:4px 0}
+details ul{margin:.3em 0 .5em;padding-left:1.1em}li{margin:.35em 0}
+li b{font-weight:600}
+footer{max-width:1280px;margin:auto;padding:0 20px 24px;color:var(--mut);font-size:14px}
+.m{list-style:none;margin:.5em 0;padding:6px 8px;border-radius:6px}.m.on{background:var(--cv);outline:1px solid var(--sel)}.m small{display:block;color:var(--mut);line-height:1.4}.m small i{font-style:normal;font-weight:600;color:var(--ink)}details ul.ml{padding-left:0}.key{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--mut);margin:0 0 8px}.key span{display:flex;gap:6px;align-items:center}#sub:not([hidden]){display:flex;gap:8px}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}#panel{max-height:none}}
+</style></head><body>
+<header><h1>Atlas 3D: lengua, faringe y laringe</h1>
+<p>Modelo esquemático en corte sagital. Gira, acerca y toca cada estructura para ver su nombre y los datos de la región.</p></header>
+<div class="wrap"><section>
+<div class="tabs" id="tabs"></div>
+<div id="cv"><div id="tip"></div>
+<div class="ctl"><label><input type="checkbox" id="cut" checked> Corte sagital</label><label><input type="checkbox" id="mus"> Vista muscular</label><span id="sub" hidden><label><input type="checkbox" id="fin" checked> Intrínsecos</label><label><input type="checkbox" id="fex" checked> Extrínsecos</label></span><button id="rst">Reiniciar vista</button><span>Arrastra para girar · rueda o pellizco para zoom</span></div></div>
+</section><aside id="panel" aria-live="polite"></aside></div>
+<footer>Modelo didáctico, no a escala. Contenido basado en el infográfico «La lengua» del grupo y ampliado con Latarjet, Netter y Gray. Verifica los detalles finos en los atlas.</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const C={lengua:0xe07a8a,oro:0xe8a45f,laringo:0x4aa3a0,laringe:0xefe6c4,ctx:0x9aa3b0};
+const D={
+all:{t:"Vista general",c:"#8a97a6",lim:"Cuatro regiones continuas, de arriba abajo: la lengua forma el piso de la cavidad oral y la pared anterior de la orofaringe; la faringe baja detrás de la laringe y se continúa con el esófago.",est:[["Orofaringe","del paladar blando al borde superior de la epiglotis."],["Laringofaringe","del borde superior de la epiglotis al borde inferior del cricoides (C6)."],["Laringe","hioides a cricoides, con tráquea debajo."],["Tip","elige una región para aislarla, o toca cualquier estructura del modelo."]]},
+lengua:{t:"Lengua",c:"#e07a8a",lim:"Órgano impar, mediano y simétrico, muy móvil y revestido de mucosa. Ocupa la parte inferior de la cara y es el inicio del tubo digestivo. Tiene un cuerpo móvil (2/3 anteriores) y una base (1/3 posterior), separados por el surco terminal (V lingual), con el foramen ciego en su vértice.",
+est:[["Embriología.","Se forma en la 4.ª semana a partir de los arcos faríngeos 1.º–4.º: los 2/3 anteriores derivan del 1.º y el tercio posterior de los 2.º–4.º. Los músculos vienen de miotomas occipitales (hipogloso XII)."],["Funciones.","Masticación, deglución, gusto, articulación del lenguaje, fonación y movilidad."],["Papilas circunvaladas.","7–12, delante del surco terminal; con gusto."],["Papilas fungiformes.","150–200, en el dorso (base estrecha, vértice ensanchado); con gusto."],["Papilas filiformes.","Muy numerosas, cilindrocónicas, en hileras hacia los bordes; sin gusto."],["Papilas foliadas.","Una por lado, en bordes posterolaterales cerca de la raíz; con gusto."],["Surcos.","Fisiológicos: surco mediano y transversales que se acentúan con la edad (engrosamiento mucoso, atrofia papilar y glandular). En el niño la lengua es lisa, pero puede tener surcos laterales."],["Músculos intrínsecos (XII).","Longitudinal superior (eleva el vértice y lo lleva atrás), longitudinal inferior (desciende la punta y la lleva atrás), transverso (redondea y proyecta adelante), vertical (aplana)."],["Músculos extrínsecos.","Geniogloso (espina geniana superior; lengua contra el piso bucal y protrusión), hiogloso (atrás y abajo), estilogloso (arriba y atrás), palatogloso (arriba y atrás; inervado por el vago X). Origen, inserción y acción de los ocho, en la pestaña «Músculos de la lengua»."],["Glándulas.","Menores linguales (mucosas, serosas y mixtas; la lingual anterior de Blandin y Nuhn es mixta). Mayores: parótida 25–30 g (Stensen), submandibular 7–8 g (Wharton, carúncula), sublingual ≤3 g (15–20 conductos)."]],
+nerv:["Motora: hipogloso (XII), excepto el palatogloso (X).","Sensibilidad general: V3 (2/3 anteriores) y IX (tercio posterior).","Gusto: VII por la cuerda del tímpano (2/3 anteriores) y IX (tercio posterior)."],
+irr:["Arteria lingual (carótida externa), medial al hiogloso: dorsales (posterior), sublingual (anterior) y lingual profunda (vértice). Accesorias: palatina y faríngea ascendentes.","Venas: red submucosa → sublingual (ranina) y profunda (recibe las dorsales) → lingual (+ satélite del hipogloso) → yugular interna.","Linfáticos: apicales → submentonianos; marginales → submandibulares y cervicales profundos; centrales → yugulodigástricos y yuguloomohioideos; basales → yugulodigástricos profundos superiores."],
+cli:["Los cambios de color orientan el diagnóstico de enfermedades.","Intubación: la lengua condiciona la exposición laríngea.","Hemorragias: exigen control de las arterias linguales.","Cáncer: diseminación linfática bilateral.","Lesión del hipogloso: atrofia lingual y desviación al lado lesionado al protruir.","Anquiloglosia: afecta habla y lactancia."]},
+oro:{t:"Orofaringe",c:"#e8a45f",lim:"Segmento medio de la faringe, desde el paladar blando (≈ C2–C3) hasta el borde superior de la epiglotis, a nivel del hioides. Por delante se comunica con la cavidad oral por el istmo de las fauces.",
+est:[["Istmo de las fauces.","Limitado por paladar blando y úvula arriba, arcos palatogloso a los lados y base de la lengua abajo."],["Fosa amigdalina.","Entre el arco palatogloso (anterior) y el palatofaríngeo (posterior); aloja la amígdala palatina."],["Amígdala lingual.","Folículos linfoides en la base de la lengua; con las palatinas y las adenoides forma el anillo de Waldeyer."],["Vallécula epiglótica.","Depresión entre la base de la lengua y la epiglotis, limitada por los pliegues glosoepiglóticos."],["Pared posterior.","Constrictores superior y medio sobre la fascia prevertebral."],["Músculos modelados.","Constrictor superior, palatogloso, palatofaríngeo y estilofaríngeo (este por el IX; los demás por el plexo faríngeo y el X)."]],
+nerv:["Sensibilidad: glosofaríngeo (IX), aferencia del reflejo nauseoso.","Motora: plexo faríngeo (X); el estilofaríngeo depende del IX."],
+irr:["Arterias: faríngea ascendente, palatina ascendente y rama tonsilar (facial), palatina descendente (maxilar) y dorsales linguales.","Venas: plexo faríngeo → yugular interna y facial.","Linfáticos: ganglios yugulodigástricos (cervicales profundos superiores) y retrofaríngeos."],
+cli:["Amigdalitis y absceso periamigdalino.","Amigdalectomía: riesgo hemorrágico en la fosa amigdalina.","Apnea obstructiva por hipertrofia amigdalina o colapso de la base de la lengua.","Carcinoma de orofaringe, asociado a VPH."]},
+laringo:{t:"Laringofaringe",c:"#4aa3a0",lim:"Segmento inferior de la faringe (hipofaringe): del borde superior de la epiglotis (≈ C3–C4) al borde inferior del cricoides (C6), donde se continúa con el esófago. Rodea a la laringe por detrás y por los lados.",
+est:[["Senos piriformes.","Recesos a ambos lados de la entrada laríngea, bajo la membrana tirohioidea; bajo su mucosa corre el ramo interno del laríngeo superior."],["Región retrocricoidea.","Pared posterior del cricoides, hasta el esófago."],["Constrictores medio e inferior.","Partes condrofaríngea, tirofaríngea y cricofaríngea."],["Cricofaríngeo.","Esfínter esofágico superior."],["Triángulo de Killian.","Zona débil entre las fibras tirofaríngeas y cricofaríngeas."],["Entrada de la laringe.","Delimitada por la epiglotis, los pliegues ariepiglóticos y los aritenoides."],["Músculos modelados.","Constrictores medio e inferior (porción tirofaríngea) y cricofaríngeo, por el plexo faríngeo (X)."]],
+nerv:["Motora: plexo faríngeo (X); el cricofaríngeo recibe además fibras del laríngeo recurrente.","Sensibilidad: plexo faríngeo (IX, X) y ramo interno del laríngeo superior."],
+irr:["Arterias: ramas faríngeas de la tiroidea inferior y de la faríngea ascendente.","Venas: plexo faríngeo → yugular interna y venas tiroideas.","Linfáticos: cervicales profundos (yugulodigástricos y yuguloomohioideos) y paratraqueales."],
+cli:["Cuerpos extraños y espinas de pescado se alojan en los senos piriformes.","Divertículo de Zenker por el triángulo de Killian.","Carcinoma del seno piriforme: diagnóstico tardío y metástasis ganglionar frecuente.","Disfagia por disfunción cricofaríngea."]},
+laringe:{t:"Laringe",c:"#c9b97a",lim:"Órgano de la fonación y protección de la vía aérea, de C3 a C6 (hioides al borde inferior del cricoides), por delante de la laringofaringe. Se continúa con la tráquea.",
+est:[["Esqueleto.","Hioides (suspendido), tiroides (dos láminas, prominencia laríngea), cricoides (anillo completo con lámina posterior), epiglotis (fibrocartílago elástico), aritenoides (pares; apófisis vocal y muscular), corniculados y cuneiformes."],["Membranas.","Tirohioidea (la perforan vasos y el ramo interno del laríngeo superior) y cricotiroidea (cono elástico)."],["Cavidad.","Vestíbulo, pliegues vestibulares, ventrículo, pliegues vocales, rima glótica y cavidad infraglótica."],["Músculos.","Cricotiroideo (tensor); cricoaritenoideo posterior (único abductor); cricoaritenoideo lateral, tiroaritenoideo y aritenoideo transverso y oblicuo (aductores y moduladores de la tensión)."]],
+nerv:["Motora: laríngeo recurrente (X) para todos los intrínsecos, excepto el cricotiroideo (ramo externo del laríngeo superior).","Sensibilidad supraglótica: ramo interno del laríngeo superior.","Sensibilidad infraglótica: laríngeo recurrente."],
+irr:["Arterias: laríngea superior (tiroidea superior, atraviesa la membrana tirohioidea) e inferior (tiroidea inferior).","Venas: tributarias de las tiroideas superior e inferior.","Linfáticos: supraglóticos → cervicales profundos superiores; infraglóticos → pretraqueales y paratraqueales; el plano glótico casi no tiene."],
+cli:["Intubación: la epiglotis y las cuerdas guían la laringoscopia.","Cricotirotomía de urgencia por la membrana cricotiroidea.","Lesión del recurrente: disfonía; bilateral, estridor.","Edema de glotis (laringitis, angioedema) como urgencia de vía aérea.","Cáncer glótico: diagnóstico temprano por la disfonía y poca diseminación linfática."]}};
+D.musc={t:"Músculos de la lengua",c:"#d4553f",lim:"Ocho músculos pares, separados por el septo lingual. Los intrínsecos nacen y terminan dentro de la lengua y cambian su forma; los extrínsecos nacen en huesos o en el paladar y cambian su posición. Todos están inervados por el hipogloso (XII), salvo el palatogloso (X). Toca un músculo del modelo para resaltarlo aquí.",
+sec:[{h:"Intrínsecos (modifican la forma)",d:"Sin inserción ósea; forman la masa de la lengua móvil. Inervación: hipogloso (XII).",m:[
+["Longitudinal superior","longitudinal superior","Origen: submucosa y septo lingual, cerca de la epiglotis.","Inserción: bordes y vértice, bajo la mucosa del dorso.","Acción: acorta la lengua y curva el vértice y los bordes hacia arriba (dorso cóncavo)."],
+["Longitudinal inferior","longitudinal inferior","Origen: raíz de la lengua.","Inserción: vértice, entre el geniogloso y el hiogloso.","Acción: acorta la lengua y curva el vértice hacia abajo (dorso convexo)."],
+["Transverso","transverso","Origen: septo lingual.","Inserción: aponeurosis y submucosa de los bordes laterales.","Acción: estrecha y alarga la lengua; ayuda a la protrusión."],
+["Vertical","vertical","Origen: dorso, en la parte anterior.","Inserción: cara inferior (fibras dorsoventrales).","Acción: aplana y ensancha la lengua."]]},
+{h:"Extrínsecos (modifican la posición)",d:"Anclan la lengua a la mandíbula, el hioides, el cráneo y el paladar. Inervación: hipogloso (XII), excepto el palatogloso.",m:[
+["Geniogloso","geniogloso","Origen: espina geniana superior de la mandíbula.","Inserción: abanico desde la base hasta el vértice del dorso; las fibras más bajas llegan al cuerpo del hioides.","Acción: protruye y deprime la lengua; si actúa un solo lado, la desvía hacia el lado contrario. Mantiene permeable la vía aérea."],
+["Hiogloso","hiogloso","Origen: cuerpo y asta mayor del hioides.","Inserción: bordes laterales, entre el estilogloso y el longitudinal inferior.","Acción: deprime y retrae la lengua."],
+["Estilogloso","estilogloso","Origen: apófisis estiloides y ligamento estilohioideo.","Inserción: bordes laterales, de atrás hacia delante, mezclado con el hiogloso.","Acción: eleva y retrae la lengua hacia la orofaringe durante la deglución."],
+["Palatogloso","palatogloso","Origen: aponeurosis palatina (cara oral del paladar blando).","Inserción: borde lateral y dorso de la lengua; forma el arco palatogloso.","Acción: eleva la parte posterior de la lengua y estrecha el istmo de las fauces.","Inervación: plexo faríngeo (X), no el XII."]]}],
+nerv:["Hipogloso (XII): todos los intrínsecos y tres extrínsecos (geniogloso, hiogloso, estilogloso).","Palatogloso: plexo faríngeo (X); es el único músculo de la lengua que no depende del XII.","Las fibras corticobulbares hacia el núcleo del hipogloso son sobre todo contralaterales."],
+irr:["Arteria lingual (carótida externa), que pasa profunda al hiogloso.","Relaciones del hiogloso: superficiales a él van el hipogloso, la vena satélite, el conducto submandibular y el nervio lingual; profunda va la arteria lingual.","Venas: ranina y profunda → lingual → yugular interna."],
+cli:["Lesión del hipogloso (neurona motora inferior): atrofia, fasciculaciones y desviación hacia el lado lesionado al protruir, porque el geniogloso sano empuja hacia el lado débil.","Lesión corticobulbar (neurona motora superior): sin atrofia, y la lengua se desvía hacia el lado contrario a la lesión.","Apnea obstructiva del sueño: la hipotonía del geniogloso deja caer la base de la lengua; la estimulación del hipogloso es una opción terapéutica.","Vía aérea: al perder el tono del geniogloso (sedación, anestesia) la base de la lengua obstruye; la elevación mandibular la corrige."]};
+const NAMES={all:"Todo",lengua:"Lengua",musc:"Músculos de la lengua",oro:"Orofaringe",laringo:"Laringofaringe",laringe:"Laringe"};
+const tabs=document.getElementById("tabs"),panel=document.getElementById("panel"),cv=document.getElementById("cv"),tip=document.getElementById("tip");
+Object.keys(NAMES).forEach(k=>{const b=document.createElement("button");b.dataset.k=k;b.setAttribute("aria-pressed","false");b.innerHTML=(k==="all"?"":'<span class="dot" style="background:'+D[k].c+'"></span>')+NAMES[k];b.onclick=()=>select(k);tabs.appendChild(b)});
+let sel="all",pickName="";
+function render(){const d=D[sel],li=a=>a.map(x=>"<li>"+x+"</li>").join("");
+let h="<h2>"+d.t+"</h2>"+(pickName?'<span class="pick">'+pickName+"</span>":"")+"<p>"+d.lim+"</p>";
+if(d.est)h+="<details open><summary>Estructuras</summary><ul>"+d.est.map(e=>"<li><b>"+e[0]+"</b> "+e[1]+"</li>").join("")+"</ul></details>";
+if(d.sec)h+='<p class="key"><span><i class="dot" style="background:#e8b339"></i>Intrínseco</span><span><i class="dot" style="background:#b02e2e"></i>Extrínseco</span></p>'+d.sec.map(s=>"<details open><summary>"+s.h+"</summary><p>"+s.d+'</p><ul class="ml">'+s.m.map(m=>'<li class="m'+(pickName.toLowerCase().includes(m[1])?" on":"")+'"><b>'+m[0]+"</b>"+m.slice(2).map(l=>"<small><i>"+l.split(":")[0]+":</i>"+l.slice(l.indexOf(":")+1)+"</small>").join("")+"</li>").join("")+"</ul></details>").join("");
+if(d.nerv)h+="<details><summary>Inervación</summary><ul>"+li(d.nerv)+"</ul></details><details><summary>Irrigación, drenaje y linfáticos</summary><ul>"+li(d.irr)+"</ul></details><details open><summary>Importancia clínica</summary><ul>"+li(d.cli)+"</ul></details>";
+panel.innerHTML=h;const on=panel.querySelector(".m.on");if(on)panel.scrollTop+=on.getBoundingClientRect().top-panel.getBoundingClientRect().top-80;tabs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===sel))}
+// ---- escena
+const R=new THREE.WebGLRenderer({antialias:true,alpha:true});R.setPixelRatio(Math.min(devicePixelRatio,2));R.localClippingEnabled=true;cv.insertBefore(R.domElement,tip);
+const S=new THREE.Scene(),cam=new THREE.PerspectiveCamera(38,1,.1,100);
+S.add(new THREE.AmbientLight(0xffffff,.75));let L1=new THREE.DirectionalLight(0xffffff,.8);L1.position.set(4,6,5);S.add(L1);let L2=new THREE.DirectionalLight(0xffffff,.4);L2.position.set(-4,2,-3);S.add(L2);
+const plane=new THREE.Plane(new THREE.Vector3(-1,0,0),0),meshes=[],G=THREE;
+function mk(g,part,name,col,pos,rot,sc){const m=new G.MeshStandardMaterial({color:col,roughness:.6,transparent:true,side:G.DoubleSide,clippingPlanes:[plane]});const o=new G.Mesh(g,m);o.position.set(...pos);if(rot)o.rotation.set(...rot);if(sc)o.scale.set(...sc);o.userData={part,name,base:col};S.add(o);meshes.push(o);return o}
+const sph=new G.SphereGeometry(1,28,20),PI=Math.PI;
+const wall=(r1,r2,h,y,part,name,col)=>mk(new G.CylinderGeometry(r1,r2,h,40,1,true,PI/2-.35,PI+.7),part,name,col,[0,y,-.1]);
+// faringe
+wall(1,1,1.8,5.9,"ctx","Nasofaringe (referencia)",C.ctx);
+wall(1,1,1.6,4.2,"oro","Pared de la orofaringe",C.oro);
+wall(1,.5,2.7,2.05,"laringo","Pared de la laringofaringe",C.laringo);
+mk(new G.CylinderGeometry(.4,.4,1.6,24,1,true),"ctx","Esófago (referencia)",C.ctx,[0,-.1,-.1]);
+mk(new G.TorusGeometry(.54,.07,8,24,PI),"laringo","Músculo cricofaríngeo (esfínter esofágico superior)",0x2d7a76,[0,.85,-.1],[-PI/2,0,0]);
+[-1,1].forEach(s=>{mk(sph,"laringo","Seno piriforme",0x1f8f8a,[s*.68,2,.35],0,[.14,.55,.25]);
+mk(sph,"oro","Amígdala palatina",0xd98a4a,[s*.92,4.2,.15],0,[.2,.42,.3]);
+mk(new G.CylinderGeometry(.05,.05,.85,8),"oro","Arco palatogloso (músculo palatogloso)",0xf0b878,[s*.95,4.55,.75]).userData.mus=true;
+mk(new G.CylinderGeometry(.05,.05,.85,8),"oro","Arco palatofaríngeo (músculo palatofaríngeo)",0xf0b878,[s*.92,4.5,-.4]).userData.mus=true});
+// paladar
+mk(new G.BoxGeometry(2.2,.1,2.7),"ctx","Paladar duro (referencia)",C.ctx,[0,5.15,2.25]);
+mk(new G.BoxGeometry(1.8,.1,1.2),"oro","Paladar blando",0xf0b878,[0,5,.3]);
+mk(new G.ConeGeometry(.12,.4,12),"oro","Úvula",0xf0b878,[0,4.75,-.4],[PI,0,0]);
+// lengua
+const sy=(x,z)=>4.1+.55*Math.sqrt(Math.max(0,1-x*x-((z-2)/1.6)**2));
+mk(sph,"lengua","Cuerpo de la lengua",C.lengua,[0,4.1,2],0,[1,.55,1.6]);
+[-.5,-.25,0,.25,.5].forEach(x=>mk(sph,"oro","Amígdala lingual (base de la lengua)",0xe8a45f,[x,sy(x,.75)+.01,.75],0,[.1,.1,.1]));
+const ap=[0,1.15];mk(sph,"lengua","Foramen ciego",0x7a2a3a,[0,sy(0,1.15)+.02,1.15],0,[.05,.05,.05]);
+[-1,1].forEach(s=>{const P=[[0,1.15],[.3,1.45],[.6,1.85]].map(p=>new G.Vector3(s*p[0],sy(p[0],p[1])+.02,p[1]));
+mk(new G.TubeGeometry(new G.CatmullRomCurve3(P),12,.03,6),"lengua","Surco terminal (V lingual)",0xa84a5c,[0,0,0]);
+[.33,.66,1].forEach(t=>{const p=[P[0].x+(P[2].x-P[0].x)*t,0,P[0].z+(P[2].z-P[0].z)*t];mk(sph,"lengua","Papila circunvalada",0xf3b9c1,[p[0],sy(p[0],p[2])+.03,p[2]],0,[.055,.055,.055])})});
+mk(sph,"lengua","Papila circunvalada",0xf3b9c1,[0,sy(0,1.35)+.03,1.35],0,[.055,.055,.055]);
+// laringe
+mk(new G.TorusGeometry(.7,.07,8,24,PI),"laringe","Hioides",C.laringe,[0,3.05,.7],[PI/2,0,0]);
+mk(sph,"laringe","Epiglotis",C.laringe,[0,2.72,1.12],[-.24,0,0],[.5,.78,.08]);
+[1,-1].forEach(s=>{mk(new G.BoxGeometry(1.15,1.5,.08),"laringe","Cartílago tiroides",C.laringe,[s*.45,1.95,1.25],[0,s*.66,0]);
+mk(new G.ConeGeometry(.13,.35,10),"laringe","Cartílago aritenoides",C.laringe,[s*.17,1.55,.3]);
+mk(new G.BoxGeometry(.06,.1,1.1),"laringe","Pliegue vocal",0xf2b9c0,[s*.12,1.65,.9],[0,-s*.13,0]);
+mk(new G.BoxGeometry(.07,.1,1),"laringe","Pliegue vestibular",0xd98a93,[s*.2,1.95,.85],[0,-s*.1,0])});
+mk(new G.CylinderGeometry(.42,.42,.3,28,1,true),"laringe","Cartílago cricoides (arco)",C.laringe,[0,.9,.65]);
+mk(new G.BoxGeometry(.5,.75,.12),"laringe","Cartílago cricoides (lámina)",C.laringe,[0,1.25,.25]);
+mk(new G.BoxGeometry(.5,.16,.04),"laringe","Membrana cricotiroidea (cricotirotomía)",0xb7cbe6,[0,1.12,1.1]);
+mk(new G.CylinderGeometry(.4,.4,1.6,24,1,true),"laringe","Tráquea",0xd8cfae,[0,-.05,.65]);
+[.55,.3,.05,-.2,-.45].forEach(y=>mk(new G.TorusGeometry(.42,.04,6,20),"laringe","Anillo traqueal",C.laringe,[0,y,.65],[PI/2,0,0]));
+// ---- músculos
+const ME=0xb02e2e,MI=0xe8b339,MF=0xa8403a,ML=0xc0392b;
+const tb=(p,r,part,name,col)=>{if(p.length==2)p.splice(1,0,p[0].map((v,i)=>(v+p[1][i])/2));const o=mk(new G.TubeGeometry(new G.CatmullRomCurve3(p.map(q=>new G.Vector3(...q))),16,r,8),part,name,col,[0,0,0]);o.userData.mus=true;return o};
+const cw=(r1,r2,h,y,part,name)=>{mk(new G.CylinderGeometry(r1,r2,h,40,1,true,PI/2-.35,PI+.7),part,name,MF,[0,y,-.1]).userData.mus=true};
+cw(1.03,1.03,.9,4.85,"oro","Músculo constrictor superior de la faringe");
+cw(1.03,.88,1.2,3.2,"laringo","Músculo constrictor medio de la faringe");
+cw(.865,.586,1.5,1.75,"laringo","Músculo constrictor inferior (tirofaríngeo)");
+const xs=s=>(...a)=>a;
+[-1,1].forEach(s=>{
+[[.0,4,.9],[0,4.4,1.8],[0,4.15,3.3]].forEach(e=>tb([[s*.06,3.45,3.4],[s*.06,e[1],e[2]]],.06,"lengua","Músculo geniogloso (extrínseco)",ME));
+tb([[s*.65,3.1,.8],[s*.72,3.7,1],[s*.75,4.15,1.5]],.065,"lengua","Músculo hiogloso (extrínseco)",ME);
+tb([[s*.65,3.1,.85],[s*.7,3.8,1.6],[s*.7,4,2.2]],.05,"lengua","Músculo hiogloso (extrínseco)",ME);
+tb([[s*1.1,5.2,-.3],[s*.9,4.6,.9],[s*.75,4.15,1.8],[s*.6,4,2.8]],.06,"lengua","Músculo estilogloso (extrínseco)",ME);
+tb([[s*1.1,5.2,-.3],[s*.98,4.4,-.5],[s*.9,3.6,-.5]],.05,"oro","Músculo estilofaríngeo (IX)",MF);
+tb([1,1.8,2.6,3.3].map(z=>[s*.05,sy(s*.05,z)-.1,z]),.05,"lengua","Músculo longitudinal superior (intrínseco)",MI);
+tb([[s*.35,3.85,1.2],[s*.35,3.8,2.2],[s*.3,3.85,3.2]],.05,"lengua","Músculo longitudinal inferior (intrínseco)",MI);
+[1.5,2.2,2.9].forEach(z=>tb([[s*.02,4.3,z],[s*.4,4.33,z],[s*.75,4.2,z]],.04,"lengua","Músculo transverso (intrínseco)",MI));
+[1.8,2.4,3].forEach(z=>tb([[s*.5,3.75,z],[s*.5,4.45,z]],.04,"lengua","Músculo vertical (intrínseco)",MI));
+tb([[s*.1,1.05,.17],[s*.18,1.3,.2],[s*.24,1.5,.28]],.05,"laringe","Cricoaritenoideo posterior (único abductor)",ML);
+tb([[s*.4,.95,.62],[s*.3,1.25,.45],[s*.22,1.5,.32]],.045,"laringe","Cricoaritenoideo lateral",ML);
+tb([[s*.2,1.7,1.4],[s*.26,1.7,.9],[s*.26,1.6,.35]],.06,"laringe","Tiroaritenoideo",ML);
+tb([[s*.3,.95,.95],[s*.5,1.1,1.05],[s*.75,1.3,.95]],.06,"laringe","Cricotiroideo (tensor; ramo externo del laríngeo superior)",ML);
+tb([[s*.6,2.65,1],[s*.7,2.85,.9],[s*.7,3.05,.7]],.05,"laringe","Tirohioideo (extrínseco)",ML)});
+tb([[-.2,1.55,.2],[0,1.52,.18],[.2,1.55,.2]],.04,"laringe","Aritenoideo transverso",ML);
+tb([[-.2,1.4,.22],[.12,1.75,.25]],.03,"laringe","Aritenoideo oblicuo",ML);
+tb([[.2,1.4,.22],[-.12,1.75,.25]],.03,"laringe","Aritenoideo oblicuo",ML);
+mk(sph,"ctx","Espina geniana superior (origen del geniogloso)",0xd9d4c4,[0,3.45,3.45],0,[.09,.09,.09]);
+[-1,1].forEach(s=>mk(new G.ConeGeometry(.07,.5,10),"ctx","Apófisis estiloides (origen del estilogloso)",0xd9d4c4,[s*1.1,5.45,-.3],[PI,0,0]));
+meshes.forEach(o=>{const d=o.userData,n=d.name;if(/^Músculo (geniogloso|hiogloso|estilogloso)|palatogloso/.test(n)){d.tm=1;d.g="ex"}else if(/\(intrínseco\)/.test(n)){d.tm=1;d.g="in"}else if(/^Hioides|Espina geniana|estiloides/.test(n)){d.tm=1;d.g="ref"}});
+// ---- estilo y selección
+const fin=document.getElementById("fin"),fex=document.getElementById("fex"),sub=document.getElementById("sub");
+function style(){const vm=document.getElementById("mus").checked,mu=sel==="musc",f={in:fin.checked,ex:fex.checked,ref:true};meshes.forEach(o=>{const m=o.userData,t=o.material,on=sel==="all"||(mu?!!m.tm&&f[m.g]:m.part===sel),gh=vm&&!m.mus&&!(mu&&m.g==="ref");t.opacity=gh?(m.part==="ctx"?.05:.1):on?(m.part==="ctx"?.55:1):(m.part==="ctx"?.1:.14);t.emissive.setHex(sel!=="all"&&on&&!gh&&m.part!=="ctx"?m.base:0);t.emissiveIntensity=.2;t.depthWrite=on&&!gh})}
+const FOC={all:[0,3.1,.9],musc:[0,4,2.2],lengua:[0,4.1,1.8],oro:[0,4.2,.3],laringo:[0,2,.3],laringe:[0,1.7,.8]};
+let tgt=new G.Vector3(0,3.1,.9),goal=new G.Vector3(0,3.1,.9),th=PI/2,ph=1.35,rad=12,gr=12;
+let autoMus=false;function select(k,n){sel=k;pickName=n||"";goal.set(...FOC[k]);gr=k==="all"?12:8.5;const mc=document.getElementById("mus");if(k==="musc"&&!mc.checked){mc.checked=true;autoMus=true}else if(k!=="musc"&&autoMus){mc.checked=false;autoMus=false}sub.hidden=k!=="musc";style();render()}
+document.getElementById("cut").onchange=e=>{meshes.forEach(o=>{o.material.clippingPlanes=e.target.checked?[plane]:[];o.material.needsUpdate=true})};
+document.getElementById("mus").onchange=()=>{autoMus=false;style()};fin.onchange=fex.onchange=style;document.getElementById("rst").onclick=()=>{th=PI/2;ph=1.35;select("all")};
+// ---- órbita
+const ptr=new Map();let moved=0,pd=0;
+cv.addEventListener("pointerdown",e=>{if(e.target.closest(".ctl"))return;cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);moved=0;pd=0});
+cv.addEventListener("pointermove",e=>{if(ptr.has(e.pointerId)){const p=ptr.get(e.pointerId);
+if(ptr.size===2){const a=[...ptr.values()];const d0=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);ptr.set(e.pointerId,[e.clientX,e.clientY]);const b=[...ptr.values()],d1=Math.hypot(b[0][0]-b[1][0],b[0][1]-b[1][1]);gr=Math.min(24,Math.max(3,gr*d0/d1));return}
+const dx=e.clientX-p[0],dy=e.clientY-p[1];moved+=Math.abs(dx)+Math.abs(dy);th-=dx*.008;ph=Math.min(2.6,Math.max(.4,ph-dy*.008));ptr.set(e.pointerId,[e.clientX,e.clientY]);tip.style.display="none"}else hover(e)});
+cv.addEventListener("pointerup",e=>{if(ptr.size===1&&moved<6){const h=hit(e);if(h)select(sel==="musc"&&h.userData.tm?"musc":h.userData.part,h.userData.name)}ptr.delete(e.pointerId)});
+cv.addEventListener("pointercancel",e=>ptr.delete(e.pointerId));
+cv.addEventListener("wheel",e=>{e.preventDefault();gr=Math.min(24,Math.max(3,gr*(1+e.deltaY*.001)))},{passive:false});
+const ray=new G.Raycaster(),mv=new G.Vector2();
+function hit(e){const r=cv.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(mv,cam);const cut=document.getElementById("cut").checked;const h=ray.intersectObjects(meshes).find(i=>!(cut&&i.point.x>.001)&&i.object.material.opacity>.3);return h&&h.object}
+function hover(e){const h=hit(e);if(h){const r=cv.getBoundingClientRect();tip.textContent=h.userData.name;tip.style.display="block";tip.style.left=Math.min(e.clientX-r.left+12,r.width-tip.offsetWidth-6)+"px";tip.style.top=(e.clientY-r.top+12)+"px"}else tip.style.display="none"}
+cv.addEventListener("pointerleave",()=>tip.style.display="none");
+function size(){const w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(size).observe(cv);size();
+(function loop(){tgt.lerp(goal,.08);rad+=(gr-rad)*.1;cam.position.set(tgt.x+rad*Math.sin(ph)*Math.sin(th),tgt.y+rad*Math.cos(ph),tgt.z+rad*Math.sin(ph)*Math.cos(th));cam.lookAt(tgt);R.render(S,cam);requestAnimationFrame(loop)})();
+select("all");
+</script></body></html>
